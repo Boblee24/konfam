@@ -4,8 +4,8 @@ import { Shell } from "./shell";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "sats-starter",
-  description: "Lightning wallet starter for African builders: NWC, Nostr, AI.",
+  title: "Konfam",
+  description: "Your phone shouts when the money is REAL. A talking Lightning till with receipts nobody can forge.",
   icons: { icon: "/icon.svg" },
 };
 

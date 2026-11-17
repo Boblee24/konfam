@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "sats-starter",
-    short_name: "sats",
-    description: "Lightning wallet starter",
+    name: "Konfam",
+    short_name: "Konfam",
+    description: "A talking Lightning till: speaks only when real money lands.",
     start_url: "/",
     display: "standalone",
     background_color: "#f7f5f0",

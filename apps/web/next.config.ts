@@ -10,9 +10,9 @@ loadEnvConfig(ROOT, process.env.NODE_ENV !== "production");
 const nextConfig: NextConfig = {
   output: "standalone",
   // Workspace packages ship TypeScript source.
-  transpilePackages: ["@sats/core", "@sats/lightning", "@sats/nostr", "@sats/ai", "@sats/ui", "@sats/payouts"],
+  transpilePackages: ["@sats/core", "@sats/lightning", "@sats/nostr", "@sats/ai", "@sats/ui"],
   // Server-only libraries that must not be bundled into the client.
-  serverExternalPackages: ["@google/genai", "postgres"],
+  serverExternalPackages: ["@google/genai"],
   // Trace files from the monorepo root so the standalone output includes workspace packages.
   outputFileTracingRoot: ROOT,
   poweredByHeader: false,

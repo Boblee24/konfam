@@ -8,7 +8,7 @@ export default function WalletPage() {
   return (
     <>
       <h1 className="sr-only">Wallet</h1>
-      <WalletPanel slot="wallet" lang={lang} rates={rates} currency={lang === "fr" ? "XOF" : "NGN"} warnIfCanSpend={false} />
+      <WalletPanel slot="merchant" lang={lang} rates={rates} currency={lang === "fr" ? "XOF" : "NGN"} warnIfCanSpend />
     </>
   );
 }

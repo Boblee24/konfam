@@ -1,7 +1,7 @@
 /**
  * pnpm demo: one command from a fresh clone to a running app.
  *   1. .env.local from .env.example, with fresh ADMIN_TOKEN and SERVER_NOSTR_NSEC
- *   2. faucet test wallets for every label in DEMO_WALLETS (default: alice,bob), if missing
+ *   2. faucet test wallets for every label in DEMO_WALLETS (default: merchant,customer), if missing
  *   3. NWC_RELAY_ORIGINS filled from those wallets (so the browser CSP allows their relays)
  *   4. seed (apps override scripts/seed.ts)
  *   5. build + start on http://localhost:3000
@@ -49,7 +49,7 @@ console.log("✓ .env.local ready (secrets generated locally, never printed)");
 
 // 2. wallets
 if (!args.has("--no-wallets")) {
-  const want = (process.env.DEMO_WALLETS ?? "alice,bob").split(",").map((s) => s.trim()).filter(Boolean);
+  const want = (process.env.DEMO_WALLETS ?? "merchant,customer").split(",").map((s) => s.trim()).filter(Boolean);
   const have = new Set(nwcWallets().map((w) => w.label));
   for (const label of want) {
     if (have.has(label.toLowerCase().replace(/-/g, "_"))) continue;
@@ -77,6 +77,6 @@ if (args.has("--no-start")) {
   console.log("\nSetup done. Start with: pnpm build && pnpm start");
 } else {
   run("pnpm", ["--filter", "web", "build"]);
-  console.log("\n→ http://localhost:3000  (wallets: see NWC_* in .env.local; paste one into /wallet)\n");
+  console.log("\n→ http://localhost:3000  Merchant: paste NWC_MERCHANT on /  (box at /box)   Customer: paste NWC_CUSTOMER on /pay\n");
   run("pnpm", ["--filter", "web", "start", "--port", "3000"]);
 }
