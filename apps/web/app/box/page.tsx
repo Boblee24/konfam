@@ -7,10 +7,16 @@ import { QR, useRates, useWalletConnection } from "@sats/ui";
 import { checkMerchantPermissions, MAX_FIAT, pressKey, type Settings } from "@/lib/konfam";
 import { useSettings } from "@/lib/settings";
 import { enterFullscreen, keepAwake } from "@/lib/device";
+import { signEvent } from "@sats/nostr/browser";
+import { createReceipt, receiptUrl } from "@/lib/receipt";
+import { preloadVoice, speak, unlockAudio } from "@/lib/voice/player";
+import { paidAnnouncement, PAID_TITLE, phrase } from "@/lib/voice/phrases";
 
 const INVOICE_EXPIRY_SEC = 600;
 /** Polling fallback for wallets/relays that never send payment_received. */
 const POLL_MS = 1500;
+/** How long the receipt QR stays on the box after a payment. */
+const RECEIPT_SHOW_MS = 20_000;
 
 type Invoice = { bolt11: string; paymentHash: string; expiresAt: number; sats: number; fiat: number; createdMs: number };
 type Paid = { invoice: Invoice; tx: Tx; source: PaySource; latencyMs: number };
@@ -45,8 +51,11 @@ export default function BoxPage() {
         <button
           type="button"
           onClick={() => {
+            // Inside the tap: mobile browsers only allow sound after a user gesture.
+            unlockAudio();
             enterFullscreen();
             setStarted(true);
+            void preloadVoice(settings.lang).then(() => speak([phrase(settings.lang, "ready")]));
           }}
           className="min-h-24 rounded-3xl bg-[var(--ok)] px-10 text-3xl font-black text-white shadow-lg"
         >
@@ -99,7 +108,10 @@ function Till({ wallet, settings, live }: { wallet: Wallet; settings: Settings; 
     log.info("box.paid", { paymentHash: tx.paymentHash, latencyMs, status: source, count: tx.sats });
     setPaid({ invoice: inv, tx, source, latencyMs });
     setInvoice(null);
-  }, []);
+    void speak(paidAnnouncement(settings.lang, inv.fiat, settings.currency)).then(() =>
+      log.info("box.spoken", { paymentHash: tx.paymentHash, latencyMs: Date.now() - inv.createdMs }),
+    );
+  }, [settings.lang, settings.currency]);
 
   useEffect(() => {
     if (!invoice) return;
@@ -124,12 +136,13 @@ function Till({ wallet, settings, live }: { wallet: Wallet; settings: Settings; 
     return (
       <Screen className="bg-[#0f7a2e] text-white">
         <p className="text-[22vw] leading-none sm:text-9xl" aria-hidden>✓</p>
-        <p role="status" className="text-center text-5xl font-black tracking-tight">E DON LAND</p>
+        <p role="status" className="text-center text-5xl font-black tracking-tight">{PAID_TITLE[settings.lang]}</p>
         <p className="text-6xl font-black tabular-nums">{formatFiat(paid.invoice.fiat, currency)}</p>
         <p className="text-2xl tabular-nums opacity-90">{formatSats(paid.tx.sats)}</p>
         <p className="text-sm opacity-75">
           Confirmed by your wallet · {(paid.latencyMs / 1000).toFixed(1)} s · {paid.source === "notification" ? "live" : "checked"}
         </p>
+        <ReceiptQr wallet={wallet} paid={paid} settings={settings} />
         <button
           type="button"
           onClick={() => {
@@ -177,6 +190,69 @@ function Till({ wallet, settings, live }: { wallet: Wallet; settings: Settings; 
       </button>
       <Link href="/" className="text-sm text-[var(--muted)] underline">Exit box</Link>
     </Screen>
+  );
+}
+
+type ReceiptState = { status: "making" } | { status: "ready" | "hidden"; url: string } | { status: "unavailable" };
+
+/** Sign the PAID attestation with the merchant's Konfam ID and show it as a QR for 20 s. */
+function ReceiptQr({ wallet, paid, settings }: { wallet: Wallet; paid: Paid; settings: Settings }) {
+  const [state, setState] = useState<ReceiptState>({ status: "making" });
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { tx, invoice } = paid;
+      // Some wallets leave the preimage out of notifications; ask once more.
+      const preimage = tx.preimage ?? (await wallet.lookupInvoice(tx.paymentHash).catch(() => null))?.preimage;
+      if (!preimage) throw Object.assign(new Error("no preimage"), { code: "NO_PREIMAGE" });
+      const payload = await createReceipt(
+        {
+          content: {
+            payment_hash: tx.paymentHash,
+            sats: tx.sats,
+            fiat: invoice.fiat,
+            currency: settings.currency,
+            settled_at: tx.settledAt ?? Math.floor(Date.now() / 1000),
+            merchant_name: settings.merchantName,
+          },
+          preimage,
+          bolt11: tx.bolt11 || invoice.bolt11,
+        },
+        signEvent,
+      );
+      if (cancelled) return;
+      setState({ status: "ready", url: receiptUrl(window.location.origin, payload) });
+      log.info("box.receipt", { paymentHash: tx.paymentHash });
+    })().catch((err) => {
+      log.warn("box.receipt_failed", { code: errorCode(err) });
+      if (!cancelled) setState({ status: "unavailable" });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [wallet, paid, settings]);
+
+  useEffect(() => {
+    if (state.status !== "ready") return;
+    const url = state.url;
+    const t = setTimeout(() => setState({ status: "hidden", url }), RECEIPT_SHOW_MS);
+    return () => clearTimeout(t);
+  }, [state]);
+
+  if (state.status === "making") return <p className="text-sm opacity-75">Signing receipt…</p>;
+  if (state.status === "unavailable") return <p className="text-sm opacity-75">Receipt not available: the wallet did not share the payment proof.</p>;
+  if (state.status === "hidden") {
+    return (
+      <button type="button" onClick={() => setState({ status: "ready", url: state.url })} className="text-sm underline opacity-90">
+        Show receipt again
+      </button>
+    );
+  }
+  return (
+    <div className="flex flex-col items-center gap-1 rounded-2xl bg-white p-3 text-black">
+      <QR value={state.url} size={240} label="Receipt QR" />
+      <p className="text-sm font-semibold">Scan for your receipt</p>
+    </div>
   );
 }
 

@@ -36,6 +36,7 @@ export function Shell({ children, demo }: { children: ReactNode; demo: boolean; 
               <Link href="/box" className="font-medium underline-offset-4 hover:underline">Box</Link>
               <Link href="/r" className="font-medium underline-offset-4 hover:underline">Verify</Link>
               <Link href="/wallet" className="font-medium underline-offset-4 hover:underline">Wallet</Link>
+              <Link href="/settings" className="font-medium underline-offset-4 hover:underline">Settings</Link>
               <LanguageSwitch value={lang} onChange={setLang} langs={["en", "pcm", "fr"]} />
             </nav>
           </header>

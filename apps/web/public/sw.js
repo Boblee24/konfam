@@ -2,11 +2,12 @@
  * - /_next/static, icons, /voice/*: cache-first (immutable, hashed or versioned files)
  * - page navigations: network-first, fall back to the last cached copy
  * - /api/*: never cached here (apps queue writes themselves, e.g. in IndexedDB)
- * Apps extend PRECACHE (e.g. Konfam adds its voice pack).
+ * Konfam: the voice pack for the merchant's language is fetched (and so cached here) when box mode starts
+ * (lib/voice/player.ts preloadVoice), so the announce step works offline. Missing clips (404) are not cached.
  */
-const VERSION = "v1";
+const VERSION = "konfam-v2";
 const SHELL = `shell-${VERSION}`;
-const PRECACHE = ["/", "/wallet", "/icon.svg", "/manifest.webmanifest"];
+const PRECACHE = ["/", "/box", "/r", "/pay", "/wallet", "/settings", "/icon.svg", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
