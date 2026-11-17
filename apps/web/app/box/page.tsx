@@ -19,7 +19,7 @@ const POLL_MS = 1500;
 const RECEIPT_SHOW_MS = 20_000;
 
 type Invoice = { bolt11: string; paymentHash: string; expiresAt: number; sats: number; fiat: number; createdMs: number };
-type Paid = { invoice: Invoice; tx: Tx; source: PaySource; latencyMs: number };
+type Paid = { invoice: Invoice; tx: Tx; source: PaySource };
 
 export default function BoxPage() {
   const { settings } = useSettings();
@@ -103,12 +103,14 @@ function Till({ wallet, settings, live }: { wallet: Wallet; settings: Settings; 
   };
 
   const onPaid = useCallback((inv: Invoice, tx: Tx, source: PaySource) => {
-    // Settlement time from the wallet (second precision) to the moment we turn green.
-    const latencyMs = tx.settledAt ? Math.max(0, Date.now() - tx.settledAt * 1000) : Date.now() - inv.createdMs;
-    log.info("box.paid", { paymentHash: tx.paymentHash, latencyMs, status: source, count: tx.sats });
-    setPaid({ invoice: inv, tx, source, latencyMs });
+    // latencyMs here = time since the invoice was CREATED (includes the buyer scanning and paying).
+    // It is NOT pay→detected: the wallet's settled_at is on another clock with 1 s precision, so we
+    // don't use it. Pay→detected latency is measured with `pnpm nwc:latency` (docs/NWC_FINDINGS.md).
+    log.info("box.paid", { paymentHash: tx.paymentHash, latencyMs: Date.now() - inv.createdMs, status: source, count: tx.sats });
+    setPaid({ invoice: inv, tx, source });
     setInvoice(null);
     void speak(paidAnnouncement(settings.lang, inv.fiat, settings.currency)).then(() =>
+      // Also measured from invoice creation.
       log.info("box.spoken", { paymentHash: tx.paymentHash, latencyMs: Date.now() - inv.createdMs }),
     );
   }, [settings.lang, settings.currency]);
@@ -140,7 +142,7 @@ function Till({ wallet, settings, live }: { wallet: Wallet; settings: Settings; 
         <p className="text-6xl font-black tabular-nums">{formatFiat(paid.invoice.fiat, currency)}</p>
         <p className="text-2xl tabular-nums opacity-90">{formatSats(paid.tx.sats)}</p>
         <p className="text-sm opacity-75">
-          Confirmed by your wallet · {(paid.latencyMs / 1000).toFixed(1)} s · {paid.source === "notification" ? "live" : "checked"}
+          Confirmed by your wallet · {paid.source === "notification" ? "live" : "checked"}
         </p>
         <ReceiptQr wallet={wallet} paid={paid} settings={settings} />
         <button
