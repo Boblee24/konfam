@@ -278,9 +278,11 @@ function InvoiceScreen({ invoice, currency, live, onCancel }: { invoice: Invoice
     <Screen className="bg-white text-black">
       <p className="text-5xl font-black tabular-nums">{formatFiat(invoice.fiat, currency)}</p>
       <p className="text-xl tabular-nums">{formatSats(invoice.sats)}</p>
-      <div className="rounded-2xl bg-white p-2">
+      {/* Tapping the QR opens a Lightning wallet on this same phone. */}
+      <a href={`lightning:${invoice.bolt11}`} className="rounded-2xl bg-white p-2" aria-label="Open in a Lightning wallet">
         <QR value={`lightning:${invoice.bolt11}`} size={300} label="Scan to pay with Lightning" />
-      </div>
+      </a>
+      <CopyInvoice bolt11={invoice.bolt11} />
       <p className="animate-pulse text-xl font-semibold">Waiting for the money…</p>
       <p className="text-sm text-neutral-600">
         {Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")} left · {live ? "live alerts" : "checking every 1.5 s"}
@@ -290,6 +292,28 @@ function InvoiceScreen({ invoice, currency, live, onCancel }: { invoice: Invoice
         Cancel
       </button>
     </Screen>
+  );
+}
+
+/** Small secondary action: the QR stays the main way to pay. For desktops without a camera scanner. */
+function CopyInvoice({ bolt11 }: { bolt11: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        void navigator.clipboard
+          ?.writeText(bolt11)
+          .then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          })
+          .catch(() => {})
+      }
+      className="min-h-10 rounded-lg border border-neutral-300 px-4 text-sm font-medium text-neutral-700"
+    >
+      {copied ? "Copied ✓" : "Copy invoice"}
+    </button>
   );
 }
 
