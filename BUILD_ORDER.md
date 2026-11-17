@@ -3,28 +3,28 @@
 Session A. Start: **Tue 12:30 WAT**. Tick the boxes as you go and keep every time box.
 
 ## Phase 1: Box mode end to end (Tue 12:30–17:00)
-- [ ] Rename the app/package to `konfam`; set the README title; remove the starter's `@sats/payouts` dependency (no DB here)
-- [ ] `/` setup flow: merchant name (max 40 chars), language (`pcm`,`yo`,`ha`,`en`,`fr`,`wo`), currency (NGN/XOF), connect wallet (paste NWC). Store in IndexedDB.
-- [ ] Permission check on connect → red banner if the connection can spend (see CLAUDE.md)
-- [ ] Merchant Konfam ID: `@sats/nostr.getOrCreateKey()`; show the npub; **backup prompt** (exportBackup, "write it down")
-- [ ] `/box`:
-  - [ ] "Enable sound" gate + Wake Lock
-  - [ ] Big numeric keypad, fiat amount → sats via `/api/rates` (show both)
-  - [ ] `makeInvoice({ sats, memo: "Konfam", expirySec: 600 })` → full-screen QR + amount
-  - [ ] `watchPayments({ paymentHash, sinceUnix: sessionStart, onPaid })` → full-screen green "E DON LAND ✓" + amount
-  - [ ] Timer instrumentation (log `latencyMs` via the allowlisted logger)
-- [ ] `/pay` customer demo wallet: connect the second NWC wallet, scan/paste an invoice, show the amount, confirm, pay, show the preimage + "Get receipt" link
+- [x] Rename the app/package to `konfam`; set the README title; remove the starter's `@sats/payouts` dependency (no DB here)
+- [x] `/` setup flow: merchant name (max 40 chars), language (`pcm`,`yo`,`ha`,`en`,`fr`,`wo`), currency (NGN/XOF), connect wallet (paste NWC). Store in IndexedDB.
+- [x] Permission check on connect → red banner if the connection can spend (see CLAUDE.md)
+- [x] Merchant Konfam ID: `@sats/nostr.getOrCreateKey()`; show the npub; **backup prompt** (exportBackup, "write it down")
+- [x] `/box`:
+  - [x] "Enable sound" gate + Wake Lock
+  - [x] Big numeric keypad, fiat amount → sats via `/api/rates` (show both)
+  - [x] `makeInvoice({ sats, memo: "Konfam", expirySec: 600 })` → full-screen QR + amount
+  - [x] `watchPayments({ paymentHash, sinceUnix: sessionStart, onPaid })` → full-screen green "E DON LAND ✓" + amount
+  - [x] Timer instrumentation (log `latencyMs` via the allowlisted logger)
+- [x] `/pay` customer demo wallet: connect the second NWC wallet, scan/paste an invoice, show the amount, confirm, pay, show the preimage + "Get receipt" link
 - [ ] HUMAN TODO: create `merchant` + `customer` faucet wallets; test box → pay on two devices (laptop + phone)
-- [ ] **Checkpoint:** a payment on device B turns device A green within ~2 s
+- [ ] **Checkpoint:** a payment on device B turns device A green within ~2 s *(code done; needs the two faucet wallets + a two-device test)*
 
 ## Phase 2: Voice + receipts + wallet (Tue 17:00–23:00)
-- [ ] `lib/voice/composeAmount.ts` + tests (0 → 9,999,999)
-- [ ] `lib/voice/player.ts`: sequential clip playback with preloading, `speechSynthesis` fallback per language, volume max
-- [ ] Phrase templates per language; wire up `received` + amount + currency + `landed`
-- [ ] Load the human's clips from `public/voice/<lang>/` (see VOICE_CLIPS.md). Until they arrive, use the `speechSynthesis` fallback.
-- [ ] Receipts: after settlement, sign a PAID attestation (CLAUDE.md "Receipt design") → show the receipt QR on the box for 20 s
-- [ ] `/r` verifier: parse the fragment, run the 3 checks, green/red UI, show the merchant name + npub + amount + time. Tests for valid, tampered preimage, tampered amount and bad signature.
-- [ ] `/wallet` with `@sats/ui` WalletPanel
+- [x] `lib/voice/composeAmount.ts` + tests (0 → 9,999,999)
+- [x] `lib/voice/player.ts`: sequential clip playback with preloading, `speechSynthesis` fallback per language, volume max
+- [x] Phrase templates per language; wire up `received` + amount + currency + `landed`
+- [ ] Load the human's clips from `public/voice/<lang>/` (see VOICE_CLIPS.md). Until they arrive, use the `speechSynthesis` fallback. *(Code done: drop the mp3s in and they are used automatically; /settings → "Test the voice" shows how many were found. Waiting on the clips.)*
+- [x] Receipts: after settlement, sign a PAID attestation (CLAUDE.md "Receipt design") → show the receipt QR on the box for 20 s
+- [x] `/r` verifier: parse the fragment, run the 3 checks, green/red UI, show the merchant name + npub + amount + time. Tests for valid, tampered preimage, tampered amount and bad signature.
+- [x] `/wallet` with `@sats/ui` WalletPanel
 - [ ] **Checkpoint (23:00):** pay → phone speaks in Pidgin → receipt scans as PAID. PROVEN on a third device
 
 ## Phase 3: Konfam Check (Wed 08:00–12:00)
