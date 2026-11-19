@@ -32,20 +32,29 @@ export function useWalletConnection(slot = "wallet") {
         return false;
       }
       setStatus("connecting");
-      const w = createWallet(nwcUrl);
-      try {
-        const i = await withTimeout(w.info(), 15_000);
-        if (persist) await set(key, nwcUrl.trim());
-        setWallet(w);
-        setInfo(i);
-        setStatus("connected");
-        return true;
-      } catch (err) {
-        w.close();
-        setError(errorCode(err));
-        setStatus("error");
-        return false;
+      // The first relay connection is often slow (cold websocket + relay auth), so the first get_info can
+      // time out even though the string is fine. Retry once on a fresh client with a longer timeout
+      // before showing an error.
+      let lastErr: unknown;
+      for (const timeoutMs of [12_000, 25_000]) {
+        const w = createWallet(nwcUrl);
+        try {
+          const i = await withTimeout(w.info(), timeoutMs);
+          if (persist) await set(key, nwcUrl.trim());
+          setWallet(w);
+          setInfo(i);
+          setStatus("connected");
+          return true;
+        } catch (err) {
+          w.close();
+          lastErr = err;
+          // A definite answer from the wallet (e.g. UNAUTHORIZED) won't change on retry.
+          if ((err as { walletResponse?: unknown })?.walletResponse === true) break;
+        }
       }
+      setError(errorCode(lastErr));
+      setStatus("error");
+      return false;
     },
     [key],
   );
