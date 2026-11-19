@@ -1,64 +1,202 @@
 @import "tailwindcss";
 @source "../../../packages/ui/src";
 
+/*
+ * Konfam: "Lagos signboard". Danfo yellow, ink black, warm paper, money green, alarm red.
+ * Always light: the box lives on a market table in full sun.
+ */
 :root {
-  --bg: #f7f5f0;
+  --bg: #fff6dc; /* warm paper */
   --surface: #ffffff;
-  --surface-2: #efece4;
-  --fg: #16140f;
-  --muted: #5c574c;
-  --border: #d9d4c7;
-  --accent: #f7931a; /* bitcoin orange */
-  --accent-fg: #16140f;
-  --ok: #138a36;
-  --danger: #c0262d;
-  --warn: #ffcf33;
+  --surface-2: #fbeec4;
+  --fg: #0d0c0a; /* ink */
+  --muted: #4a443a;
+  --border: #0d0c0a;
+  --accent: #0d0c0a; /* primary buttons: ink with yellow text */
+  --accent-fg: #ffd23f;
+  --yellow: #ffd23f; /* danfo */
+  --ok: #00873e; /* money green */
+  --ok-deep: #005f2b;
+  --danger: #d7191c; /* alarm red */
+  --warn: #ffd23f;
   --focus: #1d4ed8;
+  --shadow: 4px 4px 0 var(--fg);
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #12110e;
-    --surface: #1c1a16;
-    --surface-2: #29261f;
-    --fg: #f4f1ea;
-    --muted: #b3ac9c;
-    --border: #3a362d;
-    --accent: #f7931a;
-    --accent-fg: #12110e;
-    --ok: #3ccf6a;
-    --danger: #ef4c53;
-    --warn: #ffcf33;
-    --focus: #8fb3ff;
-    color-scheme: dark;
-  }
-}
-
-:root[data-theme="dark"] {
-  --bg: #12110e;
-  --surface: #1c1a16;
-  --surface-2: #29261f;
-  --fg: #f4f1ea;
-  --muted: #b3ac9c;
-  --border: #3a362d;
-  --accent: #f7931a;
-  --accent-fg: #12110e;
-  --ok: #3ccf6a;
-  --danger: #ef4c53;
-  --warn: #ffcf33;
-  --focus: #8fb3ff;
-  color-scheme: dark;
+@theme inline {
+  --font-display: var(--kf-display);
+  --font-sans: var(--kf-body);
+  --color-ink: #0d0c0a;
+  --color-paper: #fff6dc;
+  --color-danfo: #ffd23f;
+  --color-money: #00873e;
+  --color-money-deep: #005f2b;
+  --color-alarm: #d7191c;
 }
 
 html {
   -webkit-text-size-adjust: 100%;
+  background: var(--bg);
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--kf-body), "Segoe UI", sans-serif;
   font-size: 18px;
   line-height: 1.5;
+}
+
+@layer components {
+/* Condensed signboard headline type. */
+.display {
+  font-family: var(--kf-display), "Arial Narrow", sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 0.92;
+}
+
+/* Black/yellow hazard stripe, as painted on danfo buses. */
+.stripe {
+  height: 10px;
+  background: repeating-linear-gradient(-45deg, var(--fg) 0 12px, var(--yellow) 12px 24px);
+}
+
+/* Hard-shadow signboard panel. */
+.panel {
+  background: var(--surface);
+  border: 3px solid var(--fg);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+/* Big pressable buttons: press down into their shadow. */
+.press {
+  border: 3px solid var(--fg);
+  box-shadow: var(--shadow);
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+.press:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--fg);
+}
+.press:disabled {
+  box-shadow: none;
+  opacity: 0.4;
+}
+
+}
+
+/* Rubber-stamp verdicts. */
+.stamp {
+  display: inline-block;
+  border: 5px solid currentColor;
+  border-radius: 10px;
+  padding: 0.15em 0.4em;
+  transform: rotate(-4deg);
+  animation: stamp-in 380ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+@keyframes stamp-in {
+  from {
+    transform: rotate(-12deg) scale(2.2);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(-4deg) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Green screen: a burst behind the tick. */
+.burst {
+  animation: burst 700ms ease-out both;
+}
+@keyframes burst {
+  from {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.rise {
+  animation: rise 420ms ease-out both;
+}
+.rise-2 {
+  animation: rise 420ms 90ms ease-out both;
+}
+.rise-3 {
+  animation: rise 420ms 180ms ease-out both;
+}
+@keyframes rise {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Waiting dots. */
+.dots span {
+  display: inline-block;
+  width: 0.5em;
+  height: 0.5em;
+  margin: 0 0.15em;
+  border-radius: 999px;
+  background: currentColor;
+  animation: dot 1s infinite ease-in-out both;
+}
+.dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes dot {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.4);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Paper grain, drawn with gradients (no image request). */
+.grain {
+  background-image:
+    radial-gradient(rgba(13, 12, 10, 0.05) 1px, transparent 1px),
+    radial-gradient(rgba(13, 12, 10, 0.035) 1px, transparent 1px);
+  background-size: 7px 7px, 11px 11px;
+  background-position: 0 0, 3px 5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp,
+  .burst,
+  .rise,
+  .rise-2,
+  .rise-3,
+  .dots span {
+    animation: none;
+  }
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }

@@ -1,13 +1,13 @@
 "use client";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BigButton } from "@sats/ui";
 import { useWalletConnection } from "@sats/ui";
 import { checkMerchantPermissions, settingsSchema, uiLangFor, VOICE_LANG_LABEL, VOICE_LANGS, type VoiceLang } from "@/lib/konfam";
 import { useSettings } from "@/lib/settings";
 import { ConnectWallet } from "@/components/ConnectWallet";
 import { PermissionBanner } from "@/components/PermissionBanner";
 import { KonfamId } from "@/components/KonfamId";
+import { btn, field, Panel } from "@/components/ui";
 import { useSetAppLang } from "./shell";
 
 export default function Home() {
@@ -18,24 +18,43 @@ export default function Home() {
   const ready = !!settings && conn.status === "connected" && !!report && !report.blocked;
 
   return (
-    <section className="flex w-full max-w-xl flex-col gap-5 pt-4">
-      <h1 className="text-3xl font-bold leading-tight">Your phone shouts when the money is REAL.</h1>
-      <p className="text-[var(--muted)]">
-        Fake alerts and fake &quot;I don pay&quot; screenshots cheat sellers every day. Konfam turns an old Android phone into a
-        talking Lightning till. It speaks only when real money lands in <b>your</b> wallet, and gives every buyer a receipt
-        nobody can forge.
-      </p>
+    <section className="flex w-full max-w-xl flex-col gap-6">
+      <div className="rise flex flex-col gap-4 pt-2">
+        <h1 className="display text-[3.4rem] sm:text-7xl">
+          Your phone shouts when the money is{" "}
+          <span className="stamp bg-white text-money">real</span>
+        </h1>
+        <p className="text-lg font-bold">
+          Fake alert. Fake &quot;I don pay&quot; screenshot. Goods gone. <span className="bg-danfo px-1">Not again.</span>
+        </p>
+        <p className="text-[var(--muted)]">
+          Konfam turns an old Android phone into a talking Lightning till. It speaks only when real money lands in{" "}
+          <b className="text-ink">your</b> wallet, and gives every buyer a receipt nobody can forge.
+        </p>
+      </div>
+
+      <ol className="rise-2 grid grid-cols-3 gap-2 text-center text-sm font-bold">
+        {[
+          ["Type amount", "₦"],
+          ["Buyer scans", "▣"],
+          ["Box shouts", "📢"],
+        ].map(([label, icon], i) => (
+          <li key={label} className="panel flex flex-col items-center gap-1 px-1 py-3">
+            <span aria-hidden className="display text-4xl">{icon}</span>
+            <span>
+              {i + 1}. {label}
+            </span>
+          </li>
+        ))}
+      </ol>
 
       {ready && (
-        <Link
-          href="/box"
-          className="inline-flex min-h-14 items-center justify-center rounded-xl bg-[var(--ok)] px-6 text-xl font-bold text-white"
-        >
+        <Link href="/box" className={`${btn.go} rise-3 min-h-20 text-2xl`}>
           Open my Konfam box →
         </Link>
       )}
 
-      <Step n={1} title="Your shop" done={!!settings}>
+      <Panel title="Your shop" step={1} done={!!settings}>
         {settings === undefined ? (
           <p className="text-[var(--muted)]">…</p>
         ) : (
@@ -48,49 +67,41 @@ export default function Home() {
             }}
           />
         )}
-      </Step>
+      </Panel>
 
-      <Step n={2} title="Connect your wallet" done={conn.status === "connected"}>
+      <Panel title="Your wallet" step={2} done={conn.status === "connected"}>
         {conn.status === "loading" ? (
           <p className="text-[var(--muted)]">…</p>
         ) : conn.status === "connected" && conn.info && report ? (
           <div className="flex flex-col gap-3">
-            <p>
+            <p className="font-bold">
               Connected{conn.info.alias ? ` to ${conn.info.alias}` : ""}. Payment alerts:{" "}
-              {conn.info.notifications.includes("payment_received") ? "live" : "checked every 1.5 s"}.
+              {conn.info.notifications.includes("payment_received") ? "live ⚡" : "checked every 1.5 s"}
             </p>
             <PermissionBanner report={report} />
-            <BigButton variant="ghost" onClick={() => void conn.disconnect()}>
-              Disconnect
-            </BigButton>
+            <button type="button" className={btn.link} onClick={() => void conn.disconnect()}>
+              Disconnect this wallet
+            </button>
           </div>
         ) : (
           <ConnectWallet busy={conn.status === "connecting"} error={conn.error} onConnect={conn.connect} />
         )}
-      </Step>
+      </Panel>
 
-      <Step n={3} title="Your Konfam ID" done>
+      <Panel title="Your Konfam ID" step={3} done>
         <KonfamId />
-      </Step>
+      </Panel>
 
-      <ul className="list-disc space-y-1 pl-6 text-sm text-[var(--muted)]">
-        <li>Your wallet connection and receipt key stay on this phone. Our server never sees them.</li>
-        <li>Konfam never holds your money: it lands straight in your own wallet.</li>
+      <ul className="flex flex-col gap-2 text-sm font-bold">
+        <li>🔒 Your wallet connection and receipt key stay on this phone. Our server never sees them.</li>
+        <li>💸 Konfam never holds your money: it lands straight in your own wallet.</li>
         <li>
-          Got a receipt? <Link href="/r" className="underline">Verify it here</Link>.
+          🧾 Got a receipt?{" "}
+          <Link href="/r" className="underline decoration-2 underline-offset-4">
+            Check it here
+          </Link>
         </li>
       </ul>
-    </section>
-  );
-}
-
-function Step({ n, title, done, children }: { n: number; title: string; done: boolean; children: ReactNode }) {
-  return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm">
-      <h2 className="text-xl font-bold">
-        <span aria-hidden>{done ? "✅" : `${n}.`}</span> {title}
-      </h2>
-      {children}
     </section>
   );
 }
@@ -124,10 +135,9 @@ function ShopForm({
     setSaved(true);
   };
 
-  const field = "min-h-12 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-base";
   return (
     <form
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
         void submit();
@@ -135,32 +145,50 @@ function ShopForm({
       onChange={() => setSaved(false)}
     >
       <label className="flex flex-col gap-1">
-        <span className="text-sm text-[var(--muted)]">Shop name (shown on receipts)</span>
-        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} required className={field} />
+        <span className="font-bold">Shop name (shown on receipts)</span>
+        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} required placeholder="Mama Nkechi Foods" className={field} />
       </label>
-      <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-[var(--muted)]">Voice</span>
-          <select value={lang} onChange={(e) => setLang(e.target.value as VoiceLang)} className={field}>
-            {VOICE_LANGS.map((l) => (
-              <option key={l} value={l}>
-                {VOICE_LANG_LABEL[l]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-[var(--muted)]">Money</span>
-          <select value={currency} onChange={(e) => setCurrency(e.target.value as "NGN" | "XOF")} className={field}>
-            <option value="NGN">Naira (₦)</option>
-            <option value="XOF">FCFA</option>
-          </select>
-        </label>
-      </div>
-      {error && <p role="alert" className="text-[var(--danger)]">{error}</p>}
-      <BigButton type="submit" variant={saved ? "secondary" : "primary"}>
-        {saved ? "Saved ✓" : "Save"}
-      </BigButton>
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-1 font-bold">Voice</legend>
+        <div className="grid grid-cols-3 gap-2">
+          {VOICE_LANGS.map((l) => (
+            <label
+              key={l}
+              className={`press flex min-h-14 cursor-pointer items-center justify-center rounded-xl px-1 text-center font-bold has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-[var(--focus)] ${lang === l ? "bg-ink text-danfo" : "bg-white"}`}
+            >
+              <input type="radio" name="lang" value={l} checked={lang === l} onChange={() => setLang(l)} className="sr-only" />
+              {VOICE_LANG_LABEL[l]}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-1 font-bold">Money</legend>
+        <div className="grid grid-cols-2 gap-2">
+          {(
+            [
+              ["NGN", "₦ Naira"],
+              ["XOF", "FCFA"],
+            ] as const
+          ).map(([c, label]) => (
+            <label
+              key={c}
+              className={`press flex min-h-14 cursor-pointer items-center justify-center rounded-xl font-bold has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-[var(--focus)] ${currency === c ? "bg-ink text-danfo" : "bg-white"}`}
+            >
+              <input type="radio" name="currency" value={c} checked={currency === c} onChange={() => setCurrency(c)} className="sr-only" />
+              {label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      {error && (
+        <p role="alert" className="font-bold text-alarm">
+          {error}
+        </p>
+      )}
+      <button type="submit" className={saved ? btn.plain : btn.primary}>
+        {saved ? "Saved ✓" : "Save my shop"}
+      </button>
     </form>
   );
 }

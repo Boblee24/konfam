@@ -3,13 +3,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { errorCode, formatSats, log } from "@sats/core";
 import { decodeBolt11, isDefinitivePayFailure, normalizeBolt11, verifyPreimage, type DecodedBolt11 } from "@sats/lightning";
-import { BigButton, ScanButton, useWalletConnection } from "@sats/ui";
+import { ScanButton, useWalletConnection } from "@sats/ui";
 import { ConnectWallet } from "@/components/ConnectWallet";
+import { btn, Panel, Tag } from "@/components/ui";
 import { receiptPathFromScan } from "@/lib/receiptLink";
 
 /**
  * Customer demo wallet: a second faucet wallet that pays the box's invoice.
  * Stored in its own IndexedDB slot ("customer"), separate from the merchant's.
+ * Paste always works; scanning appears only where the browser supports BarcodeDetector.
  */
 export default function PayPage() {
   const conn = useWalletConnection("customer");
@@ -70,32 +72,49 @@ export default function PayPage() {
     }
   };
 
+  const reset = () => {
+    setState("idle");
+    setInv(null);
+    setText("");
+    setPreimage(null);
+    setError(null);
+  };
+
   if (conn.status === "loading") return <p className="pt-8 text-[var(--muted)]">…</p>;
 
   return (
-    <section className="flex w-full max-w-md flex-col gap-4 pt-4">
-      <h1 className="text-2xl font-bold">Customer wallet (demo)</h1>
-      <p className="text-sm text-[var(--muted)]">
-        Plays the buyer in the demo: a second test wallet that pays the Konfam box. Test sats only.
-      </p>
+    <section className="flex w-full max-w-md flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <Tag tone="ink">Demo buyer</Tag>
+        <h1 className="display text-6xl">Pay the box</h1>
+        <p className="font-bold">Plays the customer in the demo: a second test wallet that pays the Konfam box. Test sats only.</p>
+      </div>
 
       {conn.status !== "connected" || !conn.wallet ? (
-        <ConnectWallet busy={conn.status === "connecting"} error={conn.error} onConnect={conn.connect} label="Connect customer wallet" />
+        <Panel title="Connect buyer wallet">
+          <ConnectWallet busy={conn.status === "connecting"} error={conn.error} onConnect={conn.connect} label="Connect buyer wallet" />
+        </Panel>
       ) : (
         <>
-          <div className="flex items-center justify-between rounded-xl bg-[var(--surface-2)] p-3">
+          <div className="panel flex items-center justify-between gap-3 bg-ink px-4 py-3 text-white">
             <span>
-              Balance: <b className="tabular-nums">{balance === null ? "—" : formatSats(balance)}</b>
+              <span className="block text-xs font-bold text-danfo uppercase">Buyer balance</span>
+              <span className="display text-3xl tabular-nums">{balance === null ? "—" : formatSats(balance)}</span>
             </span>
-            <BigButton variant="ghost" onClick={() => void conn.disconnect()}>Disconnect</BigButton>
+            <button type="button" className="text-sm font-bold underline" onClick={() => void conn.disconnect()}>
+              Disconnect
+            </button>
           </div>
 
           {state === "paid" && preimage && inv ? (
-            <div className="flex flex-col gap-3 rounded-2xl border-2 border-[var(--ok)] p-4">
-              <p className="text-2xl font-bold text-[var(--ok)]">✓ Paid {formatSats(inv.sats ?? 0)}</p>
-              <p className="text-sm text-[var(--muted)]">Proof of payment (preimage). Only the payer gets this, and only once the money has settled:</p>
-              <p className="break-all rounded bg-[var(--surface-2)] p-2 font-mono text-xs">{preimage}</p>
-              <p className="font-semibold">Get your receipt: scan the receipt code on the seller&apos;s box.</p>
+            <div className="panel flex flex-col gap-4 p-4">
+              <p className="display stamp self-start bg-white text-5xl text-money">Paid</p>
+              <p className="display text-4xl tabular-nums">{formatSats(inv.sats ?? 0)}</p>
+              <div>
+                <p className="text-sm font-bold">Proof of payment (preimage). Only the payer gets this, and only once the money has settled:</p>
+                <p className="mt-1 break-all rounded-lg border-2 border-dashed border-ink bg-paper p-2 font-mono text-xs">{preimage}</p>
+              </div>
+              <p className="rounded-xl bg-danfo p-3 font-bold">🧾 Get your receipt: scan the receipt code on the seller&apos;s box.</p>
               <ScanButton
                 label="Scan receipt"
                 onResult={(raw) => {
@@ -104,45 +123,51 @@ export default function PayPage() {
                   else setError("That code isn't a Konfam receipt.");
                 }}
               />
-              {error && <p role="alert" className="text-[var(--danger)]">{error}</p>}
-              <BigButton
-                variant="secondary"
-                onClick={() => {
-                  setState("idle");
-                  setInv(null);
-                  setText("");
-                  setPreimage(null);
-                  setError(null);
-                }}
-              >
+              {error && (
+                <p role="alert" className="font-bold text-alarm">
+                  {error}
+                </p>
+              )}
+              <button type="button" className={btn.plain} onClick={reset}>
                 Pay another
-              </BigButton>
+              </button>
             </div>
           ) : (
-            <>
+            <Panel title="Invoice">
               <label className="flex flex-col gap-2">
-                <span className="text-sm text-[var(--muted)]">Paste the invoice from the box (lnbc…)</span>
+                <span className="font-bold">Paste the invoice from the box</span>
                 <textarea
                   value={text}
                   onChange={(e) => read(e.target.value)}
-                  rows={3}
+                  rows={4}
                   spellCheck={false}
                   autoComplete="off"
-                  className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 font-mono text-xs"
+                  placeholder="lnbc…"
+                  className="rounded-xl border-[3px] border-ink bg-white p-3 font-mono text-xs focus:outline-none focus:ring-4 focus:ring-danfo"
                 />
               </label>
               <ScanButton label="Scan the box" onResult={read} />
               {inv && (
-                <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] p-4">
-                  <p className="text-3xl font-black tabular-nums">{formatSats(inv.sats ?? 0)}</p>
-                  {inv.description && <p className="text-sm text-[var(--muted)]">For: {inv.description.slice(0, 60)}</p>}
-                  <BigButton disabled={state !== "idle"} onClick={() => void pay()}>
+                <div className="flex flex-col gap-3 rounded-xl border-[3px] border-ink bg-paper p-4">
+                  <p className="text-sm font-bold uppercase">You are paying</p>
+                  <p className="display text-6xl tabular-nums">{formatSats(inv.sats ?? 0)}</p>
+                  {inv.description && <p className="text-sm font-bold">For: {inv.description.slice(0, 60)}</p>}
+                  <button type="button" className={`${btn.go} min-h-20 text-2xl`} disabled={state !== "idle"} onClick={() => void pay()}>
                     {state === "paying" ? "Paying…" : `Pay ${formatSats(inv.sats ?? 0)}`}
-                  </BigButton>
+                  </button>
                 </div>
               )}
-              {error && <p role="alert" className="text-[var(--danger)]">{error}</p>}
-            </>
+              {error && (
+                <p role="alert" className="rounded-xl border-[3px] border-alarm bg-white p-3 font-bold text-alarm">
+                  {error}
+                </p>
+              )}
+              {state === "unknown" && (
+                <button type="button" className={btn.link} onClick={reset}>
+                  Start over
+                </button>
+              )}
+            </Panel>
           )}
         </>
       )}

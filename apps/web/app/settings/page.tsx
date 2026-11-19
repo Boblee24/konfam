@@ -1,14 +1,18 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { BigButton, useWalletConnection } from "@sats/ui";
+import { useWalletConnection } from "@sats/ui";
 import { checkMerchantPermissions, settingsSchema, uiLangFor, VOICE_LANG_LABEL, VOICE_LANGS, type VoiceLang } from "@/lib/konfam";
 import { useSettings } from "@/lib/settings";
 import { preloadVoice, speak, unlockAudio } from "@/lib/voice/player";
 import { paidAnnouncement } from "@/lib/voice/phrases";
 import { KonfamId } from "@/components/KonfamId";
 import { PermissionBanner } from "@/components/PermissionBanner";
+import { btn, Panel } from "@/components/ui";
 import { useSetAppLang } from "../shell";
+
+const choice = (on: boolean) =>
+  `press flex min-h-14 items-center justify-center rounded-xl px-1 text-center font-bold ${on ? "bg-ink text-danfo" : "bg-white"}`;
 
 export default function SettingsPage() {
   const { settings, save } = useSettings();
@@ -19,16 +23,19 @@ export default function SettingsPage() {
   if (settings === undefined) return <p className="pt-8 text-[var(--muted)]">…</p>;
   if (!settings) {
     return (
-      <p className="pt-8">
-        Set up your shop first: <Link href="/" className="underline">start here</Link>.
-      </p>
+      <div className="flex flex-col items-center gap-4 pt-8">
+        <p className="display text-5xl">Set up first</p>
+        <Link href="/" className={btn.primary}>
+          Start here →
+        </Link>
+      </div>
     );
   }
 
-  const setLang = async (lang: VoiceLang) => {
-    const next = settingsSchema.parse({ ...settings, lang });
+  const update = async (patch: Partial<{ lang: VoiceLang; currency: "NGN" | "XOF" }>) => {
+    const next = settingsSchema.parse({ ...settings, ...patch });
     await save(next);
-    setAppLang(uiLangFor(lang));
+    if (patch.lang) setAppLang(uiLangFor(patch.lang));
     setPack(null);
   };
 
@@ -46,57 +53,59 @@ export default function SettingsPage() {
 
   const report = conn.info ? checkMerchantPermissions(conn.info) : null;
   return (
-    <section className="flex w-full max-w-xl flex-col gap-5 pt-4">
-      <h1 className="text-2xl font-bold">Settings · {settings.merchantName}</h1>
+    <section className="flex w-full max-w-xl flex-col gap-5">
+      <div>
+        <p className="text-sm font-bold uppercase">Settings</p>
+        <h1 className="display text-6xl">{settings.merchantName}</h1>
+      </div>
 
-      <Card title="Voice">
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-[var(--muted)]">Language the box speaks</span>
-          <select
-            value={settings.lang}
-            onChange={(e) => void setLang(e.target.value as VoiceLang)}
-            className="min-h-12 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-base"
-          >
-            {VOICE_LANGS.map((l) => (
-              <option key={l} value={l}>
-                {VOICE_LANG_LABEL[l]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <BigButton variant="secondary" onClick={() => void test()}>
+      <Panel title="Voice">
+        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Language the box speaks">
+          {VOICE_LANGS.map((l) => (
+            <button key={l} type="button" role="radio" aria-checked={settings.lang === l} className={choice(settings.lang === l)} onClick={() => void update({ lang: l })}>
+              {VOICE_LANG_LABEL[l]}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Money">
+          {(
+            [
+              ["NGN", "₦ Naira"],
+              ["XOF", "FCFA"],
+            ] as const
+          ).map(([c, label]) => (
+            <button key={c} type="button" role="radio" aria-checked={settings.currency === c} className={choice(settings.currency === c)} onClick={() => void update({ currency: c })}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <button type="button" className={btn.yellow} onClick={() => void test()}>
           🔊 Test the voice
-        </BigButton>
-        {pack && <p className="text-sm text-[var(--muted)]">{pack}</p>}
-      </Card>
+        </button>
+        {pack && <p className="text-sm font-bold">{pack}</p>}
+      </Panel>
 
-      <Card title="Konfam ID">
+      <Panel title="Konfam ID">
         <KonfamId showQr />
-      </Card>
+      </Panel>
 
-      <Card title="Wallet permissions">
+      <Panel title="Wallet">
         {conn.status === "connected" && report ? (
           <>
             <PermissionBanner report={report} />
-            <p className="text-sm text-[var(--muted)]">
-              Payment alerts: {conn.info?.notifications.includes("payment_received") ? "live (payment_received)" : "polling every 1.5 s"}
+            <p className="font-bold">
+              Payment alerts: {conn.info?.notifications.includes("payment_received") ? "live ⚡ (payment_received)" : "checked every 1.5 s"}
             </p>
           </>
         ) : (
-          <p>
-            Not connected. <Link href="/" className="underline">Connect your wallet</Link>.
+          <p className="font-bold">
+            Not connected.{" "}
+            <Link href="/" className="underline decoration-2 underline-offset-4">
+              Connect your wallet
+            </Link>
           </p>
         )}
-      </Card>
-    </section>
-  );
-}
-
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm">
-      <h2 className="text-xl font-bold">{title}</h2>
-      {children}
+      </Panel>
     </section>
   );
 }

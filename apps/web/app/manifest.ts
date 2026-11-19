@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "A talking Lightning till: speaks only when real money lands.",
     start_url: "/",
     display: "standalone",
-    background_color: "#f7f5f0",
-    theme_color: "#f7931a",
+    background_color: "#fff6dc",
+    theme_color: "#ffd23f",
     icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" }],
   };
 }
