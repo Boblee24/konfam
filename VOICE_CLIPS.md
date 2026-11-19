@@ -5,22 +5,25 @@ Your own voice beats AI voice for Pidgin and Yoruba, and it costs ₦0. Record t
 ## How to record
 - Quiet room, phone 20 cm from your mouth, the same energy every time: clear and a bit loud, like a market announcer.
 - **One file per clip**, named **exactly** as listed, e.g. `two.m4a`. Leave half a second of silence at the start and end.
-- Then convert and trim everything in one go (laptop, with ffmpeg):
-  ```bash
-  for f in *.m4a; do ffmpeg -y -i "$f" -af "silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse,loudnorm" -ac 1 -ar 22050 -b:a 48k "${f%.m4a}.mp3"; done
-  ```
-- Put the files in `public/voice/en/` (numbers and currency) and `public/voice/<lang>/` (phrases).
+- Copy the files to the laptop, into **`voice-raw/<lang>/`** (`voice-raw/en/two.m4a`, `voice-raw/pcm/landed.m4a`, …).
+  Any phone format works (.m4a from iPhone, .opus/.ogg WhatsApp voice notes, .mp3, .wav). Names are
+  case-insensitive, and spaces become underscores ("Not Found.m4a" → `not_found`).
+- Run **`pnpm voice:import`**. It trims the silence, normalises loudness and writes small MP3s to
+  `apps/web/public/voice/<lang>/` (no ffmpeg install needed: it uses the `ffmpeg-static` package).
+  It prints which clips are still missing; the phone's own voice fills in for those, so nothing breaks.
+- `voice-raw/` is gitignored (your raw voice stays on your laptop). Commit `apps/web/public/voice/`.
+- Check on the phone: /settings → **Test the voice** shows how many clips it found.
 
-## 1. Numbers: English (used for Pidgin, Yoruba, Hausa and English), 32 clips → `public/voice/en/`
+## 1. Numbers: English (used for Pidgin, Yoruba, Hausa and English), 32 clips → `voice-raw/en/`
 `zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen`
 `twenty thirty forty fifty sixty seventy eighty ninety`
 `hundred thousand million`
 `point` (optional)
 
-## 2. Currency words, 3 clips → `public/voice/en/`
+## 2. Currency words, 3 clips → `voice-raw/en/`
 `naira` · `sats` · `cfa` (say "francs CFA")
 
-## 3. Pidgin phrases (`pcm`) → `public/voice/pcm/`
+## 3. Pidgin phrases (`pcm`) → `voice-raw/pcm/`
 | File | Say (adjust to sound natural) |
 |---|---|
 | `received.mp3` | "You don receive…" |
@@ -30,7 +33,7 @@ Your own voice beats AI voice for Pidgin and Yoruba, and it costs ₦0. Record t
 | `bank_alert.mp3` | "Na bank alert be this. Check your bank app yourself. No release goods on screenshot." |
 | `ready.mp3` | "Konfam don ready." |
 
-## 4. Yoruba phrases (`yo`) → `public/voice/yo/`
+## 4. Yoruba phrases (`yo`) → `voice-raw/yo/`
 Say these naturally in your own Yoruba. Only the meaning matters; amounts will still be spoken with the English number clips.
 | File | Meaning |
 |---|---|
@@ -45,9 +48,9 @@ Say these naturally in your own Yoruba. Only the meaning matters; amounts will s
 Ask a Hausa-speaking friend to record the same 6 phrases. Or generate them once with Spitch TTS (`language="ha"`, part of the $1 free credit), then save them as files. Don't call TTS live in the demo.
 
 ## 6. Wolof (`wo`), optional but strong for the Senegalese judges
-If you know any Wolof speaker, send them the 6 meanings above on WhatsApp and ask for voice notes (WhatsApp `.opus` works; convert with the same ffmpeg loop, changing `*.m4a` to `*.opus`). Amounts for `wo` and `fr` are spoken in French by the browser.
+If you know any Wolof speaker, send them the 6 meanings above on WhatsApp and ask for voice notes (WhatsApp `.opus` works: put them in `voice-raw/wo/` and run `pnpm voice:import`). Amounts for `wo` and `fr` are spoken in French by the browser.
 
 ## 7. French (`fr`)
 Nothing to record. The browser's French voice (`fr-FR`) speaks phrases and amounts. If you want, record the 6 phrases in French for a better sound.
 
-**Done when:** `public/voice/en/` has 35 files and `public/voice/pcm/` and `public/voice/yo/` have 6 each. Tell Session A: "voice clips are in".
+**Done when:** `pnpm voice:import` shows ✓ for `en` (34 clips; `point` is not used) and ✓ for `pcm` and `yo` (6 each). Tell Session A: "voice clips are in".

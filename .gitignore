@@ -8,3 +8,6 @@ coverage
 !.env.example
 *.tsbuildinfo
 .DS_Store
+
+# Raw voice recordings (personal); only the converted MP3s in apps/web/public/voice are committed
+voice-raw/
